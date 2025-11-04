@@ -112,7 +112,7 @@ while true do
     if mode_1st_param == 'position'
       program[program[step + 1]] = 5
     else
-      program[step + 1] = 1
+      program[step + 1] = 5
     end
     op_size = 2
   elsif instruction == 4

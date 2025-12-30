@@ -11,11 +11,6 @@ def get_value(program, value, mode, relative_base)
               value
             end
 
-  if address.nil? || address < 0
-    puts "illegal oper reading address #{address}"
-    exit
-  end
-
   program[address] || 0
 end
 
@@ -24,15 +19,7 @@ def set_value(program, value, mode, relative_base, to_set)
               program[value] || 0
             elsif mode == 'relative'
               (program[value] || 0) + relative_base
-            else
-              puts "illegal mode for writing"
-              exit
             end
-
-  if address.nil? || address < 0
-    puts "illegal oper writing address #{address}"
-    exit
-  end
 
   program[address] = to_set
 end
@@ -40,9 +27,7 @@ end
 def read_mode(header)
   return 'position'  if header == 0
   return 'immediate' if header == 1
-  return 'relative'  if header == 2
-  puts "invalid header #{header}"
-  exit
+  'relative'
 end
 
 def run_intcode_program(program, phase_setting = 0, input_value = 0, phase_set_used = false, step = 0, relative_base = 0)
@@ -51,11 +36,6 @@ def run_intcode_program(program, phase_setting = 0, input_value = 0, phase_set_u
   end
 
   while true do
-    if step < 0
-      puts 'error instruction out of bounds'
-      exit
-    end
-
     op = program[step] || 0
     if op == 99
       return {
@@ -101,11 +81,13 @@ def run_intcode_program(program, phase_setting = 0, input_value = 0, phase_set_u
     elsif instruction == 5
       arg1 = get_value(program, step + 1, mode_1st_param, relative_base)
       arg2 = get_value(program, step + 2, mode_2nd_param, relative_base)
-      op_size = 3
+      step = arg1 != 0 ? arg2 : step + 3
+      op_size = 0
     elsif instruction == 6
       arg1 = get_value(program, step + 1, mode_1st_param, relative_base)
       arg2 = get_value(program, step + 2, mode_2nd_param, relative_base)
-      op_size = 3
+      step = arg1 == 0 ? arg2 : step + 3
+      op_size = 0
     elsif instruction == 7
       arg1 = get_value(program, step + 1, mode_1st_param, relative_base)
       arg2 = get_value(program, step + 2, mode_2nd_param, relative_base)
@@ -120,9 +102,6 @@ def run_intcode_program(program, phase_setting = 0, input_value = 0, phase_set_u
       arg1 = get_value(program, step + 1, mode_1st_param, relative_base)
       relative_base += arg1
       op_size = 2
-    else
-      puts "illegal instruction"
-      exit
     end
 
     step += op_size
@@ -137,17 +116,34 @@ relative_base = 0
 
 while true do
   state = run_intcode_program(program, input_value, input_value, phase_set_used, step, relative_base)
+  break if state[:halted]
 
-  puts "output = #{state[:output]}"
+  puts state[:output]
 
   program = state[:program]
   input_value = state[:input_value]
   phase_set_used = state[:phase_set_used]
   step = state[:step]
   relative_base = state[:relative_base]
-
-  break if state[:halted]
 end
 
-p program
-puts 'halted'
+# problem 2
+
+program = input.split(',').map(&:to_i)
+input_value = 2
+phase_set_used = false
+step = 0
+relative_base = 0
+
+while true do
+  state = run_intcode_program(program, input_value, input_value, phase_set_used, step, relative_base)
+  break if state[:halted]
+
+  puts state[:output]
+
+  program = state[:program]
+  input_value = state[:input_value]
+  phase_set_used = state[:phase_set_used]
+  step = state[:step]
+  relative_base = state[:relative_base]
+end
